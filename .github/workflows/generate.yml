@@ -4,19 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       repo_name:
-        description: "New repository name (e.g., my-service)."
+        description: "New repository name (e.g., my-service)"
         required: true
         type: string
-      # base_package:
-      #   description: "Base Java package (e.g., com.acme.myservice)."
-      #   required: true
-      #   type: string
-      # application_class:
-      #   description: "Main Spring Boot application class (e.g. MyServiceApplication)."
-      #   required: true
-      #   type: string
       visibility:
-        description: "public or private."
+        description: "public or private"
         required: true
         default: "public"
         type: choice
@@ -27,41 +19,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout generator repo (this repo)
+      # 1. Check out this generator repo
+      - name: Checkout generator repo
         uses: actions/checkout@v4
         with:
           path: generator
 
+      # 2. Checkout template repo
       - name: Checkout template repo
         uses: actions/checkout@v4
         with:
           repository: Kaleb9301/spring-template
           path: template
 
+      # 3. Generate package + class and run script
       - name: Rewrite package/class/pom.xml
         run: |
+          set -euo pipefail
+
           chmod +x "${GITHUB_WORKSPACE}/generator/scripts/generate.sh"
-          # Convert repo name → safe package (replace - with _)
+
+          # Safe package name (replace - with _)
           SAFE_NAME=$(echo "${{ inputs.repo_name }}" | tr '-' '_')
-          BASE_PACKAGE="com.bankofabyssinia.${{ inputs.repo_name}}"
-      
-          # Convert repo name → PascalCase (SpringTemplate)
+          BASE_PACKAGE="com.bankofabyssinia.${{ inputs.repo_name }}"
+
+          # Convert repo name → PascalCase and remove invalid chars
           APP_NAME=$(echo "${{ inputs.repo_name }}" \
-            | sed -r 's/(^|-)([a-z])/\U\2/g')
-      
+            | sed -r 's/(^|[-_])([a-zA-Z])/\U\2/g' \
+            | tr -d '-')
+
           APPLICATION_CLASS="${APP_NAME}Application"
-      
-          echo "Generated class: ${APPLICATION_CLASS}."
-      
+
+          echo "Repo Name: ${{ inputs.repo_name }}"
+          echo "Base Package: ${BASE_PACKAGE}"
+          echo "Application Class: ${APPLICATION_CLASS}"
+
           "${GITHUB_WORKSPACE}/generator/scripts/generate.sh" \
             "${GITHUB_WORKSPACE}/template" \
             "${{ inputs.repo_name }}" \
             "${BASE_PACKAGE}" \
             "${APPLICATION_CLASS}"
-          
-         
 
-      - name: Create new repository and push generated code
+      # 4. Create new GitHub repository
+      - name: Create new repository
         env:
           TOKEN: ${{ secrets.REPO_TOKEN }}
           OWNER: Kaleb9301
@@ -93,3 +93,27 @@ jobs:
           fi
 
           sleep 3
+
+      # 5. Push generated template to new repo
+      - name: Push generated code
+        env:
+          TOKEN: ${{ secrets.REPO_TOKEN }}
+          OWNER: Kaleb9301
+          REPO: ${{ inputs.repo_name }}
+        run: |
+          set -euo pipefail
+
+          cd "${GITHUB_WORKSPACE}/template"
+
+          git init
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add .
+          git commit -m "Initial commit from template"
+
+          git branch -M main
+
+          git remote add origin https://x-access-token:${TOKEN}@github.com/${OWNER}/${REPO}.git
+
+          git push -u origin main
