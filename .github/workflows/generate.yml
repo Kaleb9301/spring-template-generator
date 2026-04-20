@@ -7,20 +7,20 @@ on:
         description: "New repository name (e.g. my-service)"
         required: true
         type: string
-      base_package:
-        description: "Base Java package (e.g. com.acme.myservice)"
-        required: true
-        type: string
-      application_class:
-        description: "Main Spring Boot application class (e.g. MyServiceApplication)"
-        required: true
-        type: string
-      visibility:
-        description: "public or private"
-        required: true
-        default: "public"
-        type: choice
-        options: [public, private]
+      # base_package:
+      #   description: "Base Java package (e.g. com.acme.myservice)"
+      #   required: true
+      #   type: string
+      # application_class:
+      #   description: "Main Spring Boot application class (e.g. MyServiceApplication)"
+      #   required: true
+      #   type: string
+      # visibility:
+      #   description: "public or private"
+      #   required: true
+      #   default: "public"
+      #   type: choice
+      #   options: [public, private]
 
 jobs:
   generate:
