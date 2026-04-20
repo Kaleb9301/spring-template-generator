@@ -4,23 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       repo_name:
-        description: "New repository name (e.g. my-service)"
+        description: "New repository name (e.g., my-service)."
         required: true
         type: string
       # base_package:
-      #   description: "Base Java package (e.g. com.acme.myservice)"
+      #   description: "Base Java package (e.g., com.acme.myservice)."
       #   required: true
       #   type: string
       # application_class:
-      #   description: "Main Spring Boot application class (e.g. MyServiceApplication)"
+      #   description: "Main Spring Boot application class (e.g. MyServiceApplication)."
       #   required: true
       #   type: string
-      # visibility:
-      #   description: "public or private"
-      #   required: true
-      #   default: "public"
-      #   type: choice
-      #   options: [public, private]
+      visibility:
+        description: "public or private."
+        required: true
+        default: "public"
+        type: choice
+        options: [public, private]
 
 jobs:
   generate:
@@ -41,11 +41,25 @@ jobs:
       - name: Rewrite package/class/pom.xml
         run: |
           chmod +x "${GITHUB_WORKSPACE}/generator/scripts/generate.sh"
+          # Convert repo name → safe package (replace - with _)
+          SAFE_NAME=$(echo "${{ inputs.repo_name }}" | tr '-' '_')
+          BASE_PACKAGE="com.bankofabyssinia.${{ inputs.repo_name}}"
+      
+          # Convert repo name → PascalCase (SpringTemplate)
+          APP_NAME=$(echo "${{ inputs.repo_name }}" \
+            | sed -r 's/(^|-)([a-z])/\U\2/g')
+      
+          APPLICATION_CLASS="${APP_NAME}Application"
+      
+          echo "Generated class: ${APPLICATION_CLASS}."
+      
           "${GITHUB_WORKSPACE}/generator/scripts/generate.sh" \
             "${GITHUB_WORKSPACE}/template" \
             "${{ inputs.repo_name }}" \
-            "${{ inputs.base_package }}" \
-            "${{ inputs.application_class }}"
+            "${BASE_PACKAGE}" \
+            "${APPLICATION_CLASS}"
+          
+         
 
       - name: Create new repository and push generated code
         env:
