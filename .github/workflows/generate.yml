@@ -7,6 +7,7 @@ on:
         description: "New repository name (e.g., my-service)"
         required: true
         type: string
+
       visibility:
         description: "public or private"
         required: true
@@ -19,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Check out this generator repo
+      # 1. Checkout generator repo
       - name: Checkout generator repo
         uses: actions/checkout@v4
         with:
@@ -32,18 +33,18 @@ jobs:
           repository: Kaleb9301/spring-template
           path: template
 
-      # 3. Generate package + class and run script
+      # 3. Generate package + class + apply template changes
       - name: Rewrite package/class/pom.xml
         run: |
           set -euo pipefail
 
           chmod +x "${GITHUB_WORKSPACE}/generator/scripts/generate.sh"
 
-          # Safe package name (replace - with _)
+          # Safe package name
           SAFE_NAME=$(echo "${{ inputs.repo_name }}" | tr '-' '_')
           BASE_PACKAGE="com.bankofabyssinia.${{ inputs.repo_name }}"
 
-          # Convert repo name → PascalCase and remove invalid chars
+          # Convert repo name → PascalCase (SpringTemplate → SpringTemplateApplication)
           APP_NAME=$(echo "${{ inputs.repo_name }}" \
             | sed -r 's/(^|[-_])([a-zA-Z])/\U\2/g' \
             | tr -d '-')
@@ -60,8 +61,8 @@ jobs:
             "${BASE_PACKAGE}" \
             "${APPLICATION_CLASS}"
 
-      # 4. Create new GitHub repository
-      - name: Create new repository
+      # 4. Create GitHub repository
+      - name: Create GitHub repository
         env:
           TOKEN: ${{ secrets.REPO_TOKEN }}
           OWNER: Kaleb9301
@@ -69,6 +70,7 @@ jobs:
           VIS: ${{ inputs.visibility }}
         run: |
           set -euo pipefail
+
           api="https://api.github.com"
 
           echo "Creating repo ${OWNER}/${REPO} (${VIS})"
@@ -94,7 +96,7 @@ jobs:
 
           sleep 3
 
-      # 5. Push generated template to new repo
+      # 5. Push generated project to new repo (SAFE FIXED VERSION)
       - name: Push generated code
         env:
           TOKEN: ${{ secrets.REPO_TOKEN }}
@@ -105,6 +107,9 @@ jobs:
 
           cd "${GITHUB_WORKSPACE}/template"
 
+          # 🔥 IMPORTANT: clean git state
+          rm -rf .git
+
           git init
           git config user.name "github-actions"
           git config user.email "actions@github.com"
@@ -114,6 +119,7 @@ jobs:
 
           git branch -M main
 
+          # Safe remote handling
           git remote add origin https://x-access-token:${TOKEN}@github.com/${OWNER}/${REPO}.git
 
           git push -u origin main
