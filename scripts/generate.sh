@@ -2,9 +2,9 @@
 set -euo pipefail
 
 TEMPLATE_DIR="${1:-}"
-REPO_NAME="${2:-}"
-BASE_PACKAGE="${3:-}"
-APP_CLASS="${4:-}"
+# REPO_NAME="${2:-}"
+# BASE_PACKAGE="${3:-}"
+# APP_CLASS="${4:-}"
 
 if [[ -z "${TEMPLATE_DIR}" || -z "${REPO_NAME}" || -z "${BASE_PACKAGE}" || -z "${APP_CLASS}" ]]; then
   echo "Usage: generate.sh <template_dir> <repo_name> <base_package> <application_class>"
